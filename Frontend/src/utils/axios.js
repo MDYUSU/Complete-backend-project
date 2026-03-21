@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:8000/api/v1", // Check your backend port!
+    baseURL: "http://localhost:8001/api/v1", // Check your backend port!
     withCredentials: true
 });
 

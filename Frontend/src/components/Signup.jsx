@@ -1,80 +1,134 @@
-import React, {useState} from 'react'
-import axiosInstance from '../utils/axios'
-import {Link, useNavigate} from 'react-router-dom'
-import {login} from '../store/authSlice'
-import { Input } from "./index"; // We'll add Button in a sec
-import {useDispatch} from 'react-redux'
-import {useForm} from 'react-hook-form'
+import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router-dom'
+import axiosInstance from '../utils/axios.js' 
 
 function Signup() {
-    const navigate = useNavigate()
+    const { register, handleSubmit, formState: { errors } } = useForm()
     const [error, setError] = useState("")
-    const dispatch = useDispatch()
-    const {register, handleSubmit} = useForm()
+    const [loading, setLoading] = useState(false)
+    const navigate = useNavigate()
 
-    const create = async(data) => {
+    const createAccount = async (data) => {
         setError("")
+        setLoading(true)
         try {
-            const userData = await axiosInstance.post("/users/register", data)
-            if (userData) {
-                // After signup, we usually redirect to login
-                navigate("/login")
+            // 1. Initialize FormData (This is the key for file uploads)
+            const formData = new FormData();
+            
+            // 2. Append all text fields
+            formData.append("fullName", data.fullName);
+            formData.append("email", data.email);
+            formData.append("username", data.username);
+            formData.append("password", data.password);
+
+            // 3. Append the Avatar file
+            // data.avatar is a FileList, so we take the first file [0]
+            if (data.avatar && data.avatar[0]) {
+                formData.append("avatar", data.avatar[0]);
             }
-        } catch (error) {
-            setError(error.response.data.message)
+
+            // 4. Send the POST request to your backend
+            const response = await axiosInstance.post("/users/register", formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data) {
+                console.log("Signup successful:", response.data);
+                navigate("/login"); // Redirect to login page on success
+            }
+        } catch (err) {
+            // Catching backend errors (like "User already exists")
+            setError(err.response?.data?.message || "An error occurred during signup");
+            console.error("Signup error details:", err);
+        } finally {
+            setLoading(false)
         }
     }
 
-  return (
-    <div className="flex items-center justify-center">
-            <div className={`mx-auto w-full max-w-lg bg-slate-800 rounded-xl p-10 border border-slate-700`}>
-            <h2 className="text-center text-2xl font-bold leading-tight text-white">Sign up to create account</h2>
-            <p className="mt-2 text-center text-base text-slate-400">
-                Already have an account?&nbsp;
-                <Link to="/login" className="font-medium text-orange-500 transition-all duration-200 hover:underline">
-                    Sign In
-                </Link>
-            </p>
-            {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
+    return (
+        <div className="flex items-center justify-center w-full py-8">
+            <div className={`mx-auto w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10`}>
+                <h2 className="text-center text-2xl font-bold leading-tight">Sign up to create account</h2>
+                <p className="mt-2 text-center text-base text-black/60">
+                    Already have an account?&nbsp;
+                    <Link to="/login" className="font-medium text-primary transition-all duration-200 hover:underline">
+                        Sign In
+                    </Link>
+                </p>
 
-            <form onSubmit={handleSubmit(create)}>
-                <div className='space-y-5'>
-                    <Input
-                    label="Full Name: "
-                    placeholder="Enter your full name"
-                    {...register("fullName", { required: true })}
-                    />
-                    <Input
-                    label="Email: "
-                    placeholder="Enter your email"
-                    type="email"
-                    {...register("email", {
-                        required: true,
-                        validate: {
-                            matchPatern: (value) => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value) ||
-                            "Email address must be a valid address",
-                        }
-                    })}
-                    />
-                    <Input
-                    label="Username: "
-                    placeholder="Enter your username"
-                    {...register("username", { required: true })}
-                    />
-                    <Input
-                    label="Password: "
-                    type="password"
-                    placeholder="Enter your password"
-                    {...register("password", { required: true })}
-                    />
-                    <button type="submit" className="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700">
-                        Create Account
-                    </button>
-                </div>
-            </form>
+                {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
+
+                <form onSubmit={handleSubmit(createAccount)} className="mt-8">
+                    <div className="space-y-5 text-black">
+                        {/* Full Name */}
+                        <div>
+                            <label className="block mb-1 font-medium">Full Name:</label>
+                            <input
+                                className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+                                placeholder="Enter your full name"
+                                {...register("fullName", { required: true })}
+                            />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                            <label className="block mb-1 font-medium">Email:</label>
+                            <input
+                                className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+                                placeholder="Enter your email"
+                                type="email"
+                                {...register("email", { required: true })}
+                            />
+                        </div>
+
+                        {/* Username */}
+                        <div>
+                            <label className="block mb-1 font-medium">Username:</label>
+                            <input
+                                className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+                                placeholder="Enter your username"
+                                {...register("username", { required: true })}
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <label className="block mb-1 font-medium">Password:</label>
+                            <input
+                                className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+                                placeholder="Enter your password"
+                                type="password"
+                                {...register("password", { required: true })}
+                            />
+                        </div>
+
+                        {/* Avatar File Upload (THE MISSING PIECE) */}
+                        <div>
+                            <label className="block mb-1 font-medium">Avatar (Profile Picture):</label>
+                            <input
+                                className="px-3 py-2 rounded-lg bg-white text-black outline-none focus:bg-gray-50 duration-200 border border-gray-200 w-full"
+                                type="file"
+                                accept="image/png, image/jpg, image/jpeg"
+                                {...register("avatar", { required: true })}
+                            />
+                            {errors.avatar && <span className="text-red-500 text-sm">Avatar is required</span>}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full bg-orange-600 text-white px-4 py-3 rounded-lg hover:bg-orange-700 transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                            {loading ? "Creating Account..." : "Create Account"}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
-  )
+    )
 }
 
 export default Signup
