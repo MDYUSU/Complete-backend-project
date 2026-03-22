@@ -11,29 +11,25 @@ import {verifyJWT} from "../middlewares/auth.middleware.js"
 import {upload} from "../middlewares/multer.middleware.js"
 
 const router = Router();
-router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
-router
-    .route("/")
-    .get(getAllVideos)
-    .post(
-        upload.fields([
-            {
-                name: "videoFile",
-                maxCount: 1,
-            },
-            {
-                name: "thumbnail",
-                maxCount: 1,
-            },
-            
-        ]),
-        publishAVideo
-    );
+// --- PUBLIC ROUTES ---
+// Anyone can see the list of videos and watch a single video
+router.route("/").get(getAllVideos);
+router.route("/:videoId").get(getVideoById); // Note: changed to /v/ to keep it clean
+
+// --- PRIVATE ROUTES (Requires Login) ---
+router.use(verifyJWT); 
+
+router.route("/").post(
+    upload.fields([
+        { name: "videoFile", maxCount: 1 },
+        { name: "thumbnail", maxCount: 1 },
+    ]),
+    publishAVideo
+);
 
 router
     .route("/:videoId")
-    .get(getVideoById)
     .delete(deleteVideo)
     .patch(upload.single("thumbnail"), updateVideo);
 

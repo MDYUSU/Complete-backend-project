@@ -15,7 +15,7 @@ function LogoutBtn() {
                 // 2. Clear Redux state
                 dispatch(logout())
                 // 3. Redirect to login
-                navigate("/login")
+                navigate("/")
             })
             .catch((err) => {
                 console.log("Logout error:", err);

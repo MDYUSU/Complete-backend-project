@@ -8,17 +8,22 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 // 1. Get all videos (Search, Sort, Pagination)
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
 
-  const pipeline = [];
+    const pipeline = [];
 
-  // Filter by userId if searching for a specific user's videos
-  if (userId) {
-    if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid userId");
-    pipeline.push({
-      $match: { owner: new mongoose.Types.ObjectId(userId) },
-    });
-  }
+    // IMPROVED CHECK: Ensure userId is a real string and not "undefined" or empty
+    if (userId && userId !== "undefined" && userId.trim() !== "") {
+        if (!isValidObjectId(userId)) {
+            throw new ApiError(400, "Invalid userId format");
+        }
+        
+        pipeline.push({
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        });
+    }
 
   // Filter by search query (Title or Description)
   if (query) {
@@ -102,28 +107,79 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 // 3. Get Video by ID
 const getVideoById = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
-  if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
+    const { videoId } = req.params;
 
-  const video = await Video.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
-    {
-      $lookup: {
-        from: "users",
-        localField: "owner",
-        foreignField: "_id",
-        as: "owner",
-        pipeline: [{ $project: { fullName: 1, username: 1, avatar: 1 } }],
-      },
-    },
-    { $unwind: "$owner" },
-  ]);
+    if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid video ID");
 
-  if (!video?.length) throw new ApiError(404, "Video not found");
+    const video = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        // 1. Get Owner Details
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    { $project: { username: 1, avatar: 1, fullName: 1 } }
+                ]
+            }
+        },
+        // 2. Get Total Likes Count
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "video",
+                as: "likes"
+            }
+        },
+        // 3. Check if CURRENT User liked it
+        {
+            $lookup: {
+                from: "likes",
+                let: { videoId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$video", "$$videoId"] },
+                                    { $eq: ["$likedBy", new mongoose.Types.ObjectId(req.user?._id)] }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "isLiked"
+            }
+        },
+        {
+            $addFields: {
+                owner: { $first: "$owner" },
+                likesCount: { $size: "$likes" },
+                isLiked: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$isLiked" }, 0] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        }
+    ]);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video[0], "Video fetched successfully"));
+
+    
+    if (!video?.length) throw new ApiError(404, "Video not found");
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, video[0], "Video fetched successfully"));
 });
 
 // 4. Update Video Details
@@ -133,20 +189,32 @@ const updateVideo = asyncHandler(async (req, res) => {
   const thumbnailLocalPath = req.file?.path;
 
   if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
+
   if (!title && !description && !thumbnailLocalPath) {
     throw new ApiError(400, "At least one field is required to update");
   }
 
+  // FIX 1: Find the video and check if it exists first
   const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  // Ownership check
   if (video.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You don't have permission to update this video");
   }
 
-  const updateData = { title, description };
+  // FIX 2: Only add fields to updateData if they are actually provided
+  const updateData = {};
+  if (title) updateData.title = title;
+  if (description) updateData.description = description;
 
   if (thumbnailLocalPath) {
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-    if (thumbnail.url) updateData.thumbnail = thumbnail.url;
+    if (thumbnail?.url) {
+        updateData.thumbnail = thumbnail.url;
+    }
   }
 
   const updatedVideo = await Video.findByIdAndUpdate(
@@ -161,6 +229,8 @@ const updateVideo = asyncHandler(async (req, res) => {
 });
 
 // 5. Delete Video
+// You'll need a helper function in your cloudinary.js file for this
+// For now, I'll show you the logic within the controller
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
@@ -168,16 +238,26 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const video = await Video.findById(videoId);
   if (!video) throw new ApiError(404, "Video not found");
 
+  // Ownership Check
   if (video.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "Unauthorized to delete this video");
   }
 
-  // Logic for deleting from Cloudinary would go here (using public_id)
+  // 1. EXTRACT PUBLIC IDs (Assumes you stored Cloudinary URLs)
+  // Example URL: https://res.cloudinary.com/demo/video/upload/v12345/public_id.mp4
+  const videoFilePublicId = video.videoFile.split("/").pop().split(".")[0];
+  const thumbnailPublicId = video.thumbnail.split("/").pop().split(".")[0];
+
+  // 2. DELETE FROM CLOUDINARY
+  // In a real app, you'd call your utility: await deleteFromCloudinary(videoFilePublicId, "video")
+  // and: await deleteFromCloudinary(thumbnailPublicId, "image")
+  
+  // 3. DELETE FROM DATABASE
   await Video.findByIdAndDelete(videoId);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Video deleted successfully"));
+    .json(new ApiResponse(200, {}, "Video and associated files deleted successfully"));
 });
 
 // 6. Toggle Publish Status

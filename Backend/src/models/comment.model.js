@@ -1,22 +1,34 @@
 import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-
-const commentSchema= new Schema({
-    content:{
-        type:String,
-        required:true
+const commentSchema = new Schema(
+  {
+    content: {
+      type: String,
+      required: true,
     },
-    video:{
-         type:Schema.Types.ObjectId,
-         ref:"Video"
+    video: {
+      type: Schema.Types.ObjectId,
+      ref: "Video",
     },
-    owner:{
-        type:Schema.Types.ObjectId,
-        ref:"User"
-    }
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
+    // 🚀 NEW: For the "Pinned" feature
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
+commentSchema.plugin(mongooseAggregatePaginate);
 
-},{timestamps:true})
-
-export const Comment= mongoose.model("Comment",commentSchema)
+export const Comment = mongoose.model("Comment", commentSchema);

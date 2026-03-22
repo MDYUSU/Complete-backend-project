@@ -6,10 +6,16 @@ import { Provider } from "react-redux";
 import store from "./store/store.js";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
-// Import your components/pages here
+// 1. All Component Imports
+import Home from './components/Home.jsx'
+import MyVideos from './components/MyVideos.jsx'
 import Login from "./components/Login.jsx";
 import Signup from "./components/Signup.jsx";
-import VideoUpload from './components/VideoUpload'
+import VideoUpload from "./components/VideoUpload.jsx";
+import VideoDetail from './components/VideoDetail.jsx';
+import EditVideo from './components/EditVideo.jsx'
+import Subscriptions from './components/Subscriptions.jsx'
+import UserProfile from './components/UserProfile.jsx'
 
 const router = createBrowserRouter([
   {
@@ -18,14 +24,8 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: (
-          <div className="text-center py-20">
-            <h1 className="text-3xl font-bold">
-              Welcome to ChaiTube Home Feed
-            </h1>
-            <p className="text-slate-400 mt-4">Videos will appear here soon!</p>
-          </div>
-        ),
+        // Now shows the Discovery Feed component instead of just text
+        element: <Home />, 
       },
       {
         path: "/login",
@@ -39,6 +39,19 @@ const router = createBrowserRouter([
         path: "/add-video",
         element: <VideoUpload />,
       },
+      {
+        // Renamed from /all-videos to /my-videos to match your new Header
+        path: "/my-videos",
+        element: <MyVideos />,
+      },
+      {
+        // Dynamic route for watching a specific video
+        path: "/watch/:videoId",
+        element: <VideoDetail />,
+      },
+      { path: "/edit-video/:videoId", element: <EditVideo /> },
+      { path: "/subscriptions", element: <Subscriptions /> },
+      { path: "/user/:userId", element: <UserProfile /> },
     ],
   },
 ]);
