@@ -38,23 +38,29 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
-    const { playlistId } = req.params
+    const { playlistId } = req.params;
 
     if (!isValidObjectId(playlistId)) {
-        throw new ApiError(400, "Invalid Playlist ID")
+        throw new ApiError(400, "Invalid Playlist ID");
     }
 
-    const playlist = await Playlist.findById(playlistId)
+    // 🚀 CRITICAL: We need to populate videos AND the owner of those videos
+    const playlist = await Playlist.findById(playlistId).populate({
+        path: "videos",
+        populate: {
+            path: "owner",
+            select: "fullName username avatar"
+        }
+    });
 
     if (!playlist) {
-        throw new ApiError(404, "Playlist not found")
+        throw new ApiError(404, "Playlist not found in Database");
     }
 
     return res
         .status(200)
-        .json(new ApiResponse(200, playlist, "Playlist fetched successfully"))
-})
-
+        .json(new ApiResponse(200, playlist, "Playlist fetched successfully"));
+});
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params
 

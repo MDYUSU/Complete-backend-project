@@ -39,7 +39,6 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exists");
     }
 
-    // Fixed: Standard path extraction for Multer fields
     const avatarLocalPath = req.files?.avatar?.[0]?.path;
     let coverImageLocalPath;
     
@@ -95,7 +94,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const isPasswordValid = await user.isPasswordCorrect(password);
 
-    // FIXED: Check isPasswordValid, not the password variable itself
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials");
     }
@@ -106,7 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: false, // Note: Set to false if you have trouble with cookies on localhost
+        secure: false, 
     };
 
     return res
@@ -187,7 +185,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-    // FIXED: Correct JSON response wrapper
     return res.status(200).json(
         new ApiResponse(200, req.user, "Current user fetched successfully")
     );
@@ -200,7 +197,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required");
     }
 
-    // FIXED: Added 'await'
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         { $set: { fullName, email } },
@@ -261,7 +257,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
-                foreignField: "channel", // FIXED spelling
+                foreignField: "channel",
                 as: "subscribers",
             },
         },
@@ -269,7 +265,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
-                foreignField: "subscriber", // FIXED logic: who they subscribed to
+                foreignField: "subscriber",
                 as: "subscribedTo",
             },
         },
@@ -361,6 +357,40 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         );
 });
 
+// 🚀 NEW: Remove single video from history
+const removeVideoFromHistory = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!videoId) throw new ApiError(400, "Video ID is required");
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $pull: { watchHistory: videoId }
+        },
+        { new: true }
+    );
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Video removed from history"));
+});
+
+// 🚀 NEW: Clear entire history
+const clearWatchHistory = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: { watchHistory: [] }
+        },
+        { new: true }
+    );
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Watch history cleared successfully"));
+});
+
 export {
     registerUser,
     loginUser,
@@ -373,4 +403,6 @@ export {
     updateUserCoverImage,
     getUserChannelProfile,
     getWatchHistory,
+    removeVideoFromHistory,
+    clearWatchHistory
 };

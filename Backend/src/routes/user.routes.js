@@ -11,6 +11,8 @@ import {
   updateUserAvatar,
   updateUserCoverImage,
   getWatchHistory,
+  removeVideoFromHistory,
+  clearWatchHistory
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -47,11 +49,13 @@ router
 
 router
   .route("/cover-image")
-  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage); // 🛠️ Fixed parentheses here
+  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage); 
 
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 
-// 🚀 WATCH HISTORY ROUTE
+// 🚀 WATCH HISTORY ROUTES
 router.route("/history").get(verifyJWT, getWatchHistory);
+router.route("/history/clear").delete(verifyJWT, clearWatchHistory);
+router.route("/history/remove/:videoId").patch(verifyJWT, removeVideoFromHistory);
 
 export default router;

@@ -112,18 +112,23 @@ const publishAVideo = asyncHandler(async (req, res) => {
 });
 
 // 3. Get Video by ID (Updated with Like/Dislike persistence)
+// ... (Your other imports remain the same)
+
+// 3. Get Video by ID (Fully Synchronized for Persistence)
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
 
     if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid video ID");
 
+    // 🚀 THE PERSISTENCE FIX: 
+    // If getOptionalUser found a token, req.user will exist.
+    // We convert it to a proper ObjectId for the aggregation match.
+    const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
+
     const video = await Video.aggregate([
         {
-            $match: {
-                _id: new mongoose.Types.ObjectId(videoId)
-            }
+            $match: { _id: new mongoose.Types.ObjectId(videoId) }
         },
-        // 1. Get Owner Details
         {
             $lookup: {
                 from: "users",
@@ -135,86 +140,92 @@ const getVideoById = asyncHandler(async (req, res) => {
                 ]
             }
         },
-        // 2. Get Total Likes Count
-{
-    $lookup: {
-        from: "likes",
-        let: { videoId: "$_id" },
-        pipeline: [
-            {
-                $match: {
-                    $expr: {
-                        $and: [
-                            { $eq: ["$video", "$$videoId"] },
-                            { $ne: ["$isDislike", true] } // 🚀 CHANGED: Count anything not explicitly a dislike
-                        ]
-                    }
-                }
-            }
-        ],
-        as: "likes"
-    }
-},
-        // 3. Check if CURRENT User LIKED it
         {
             $lookup: {
                 from: "likes",
-                let: { videoId: "$_id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$video", "$$videoId"] },
-                                    { $eq: ["$likedBy", new mongoose.Types.ObjectId(req.user?._id)] },
-                                    { $eq: ["$isDislike", false] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "isLiked"
-            }
-        },
-        // 4. 🚀 Check if CURRENT User DISLIKED it (Persistence Fix)
-        {
-            $lookup: {
-                from: "likes",
-                let: { videoId: "$_id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$video", "$$videoId"] },
-                                    { $eq: ["$likedBy", new mongoose.Types.ObjectId(req.user?._id)] },
-                                    { $eq: ["$isDislike", true] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "isDisliked"
+                localField: "_id",
+                foreignField: "video",
+                as: "likes"
             }
         },
         {
             $addFields: {
                 owner: { $first: "$owner" },
-                likesCount: { $size: "$likes" },
+                likesCount: {
+                    $size: {
+                        $filter: {
+                            input: "$likes",
+                            as: "item",
+                            cond: { $eq: ["$$item.isDislike", false] }
+                        }
+                    }
+                },
+                // 🚀 This logic now correctly identifies the user's like status on refresh
                 isLiked: {
                     $cond: {
-                        if: { $gt: [{ $size: "$isLiked" }, 0] },
+                        if: {
+                            $and: [
+                                { $ne: [userId, null] },
+                                { $in: [userId, "$likes.likedBy"] },
+                                {
+                                    $gt: [
+                                        {
+                                            $size: {
+                                                $filter: {
+                                                    input: "$likes",
+                                                    as: "item",
+                                                    cond: { 
+                                                        $and: [
+                                                            { $eq: ["$$item.likedBy", userId] },
+                                                            { $eq: ["$$item.isDislike", false] }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }, 0
+                                    ]
+                                }
+                            ]
+                        },
                         then: true,
                         else: false
                     }
                 },
                 isDisliked: {
                     $cond: {
-                        if: { $gt: [{ $size: "$isDisliked" }, 0] },
+                        if: {
+                            $and: [
+                                { $ne: [userId, null] },
+                                { $in: [userId, "$likes.likedBy"] },
+                                {
+                                    $gt: [
+                                        {
+                                            $size: {
+                                                $filter: {
+                                                    input: "$likes",
+                                                    as: "item",
+                                                    cond: { 
+                                                        $and: [
+                                                            { $eq: ["$$item.likedBy", userId] },
+                                                            { $eq: ["$$item.isDislike", true] }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }, 0
+                                    ]
+                                }
+                            ]
+                        },
                         then: true,
                         else: false
                     }
                 }
+            }
+        },
+        {
+            $project: {
+                likes: 0 
             }
         }
     ]);
@@ -226,6 +237,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, video[0], "Video fetched successfully"));
 });
 
+// ... (Rest of your functions: updateVideo, deleteVideo, etc., remain the same)
 // 4. Update Video Details
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;

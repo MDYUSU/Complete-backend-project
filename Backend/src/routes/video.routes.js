@@ -6,22 +6,21 @@ import {
     publishAVideo,
     togglePublishStatus,
     updateVideo,
-    // 🚀 NEW: Import this (make sure it's exported in your controller)
     updateWatchHistoryAndViews 
 } from "../controllers/video.controller.js"
-import {verifyJWT} from "../middlewares/auth.middleware.js"
-import {upload} from "../middlewares/multer.middleware.js"
+import { verifyJWT, getOptionalUser } from "../middlewares/auth.middleware.js" // 🚀 Added getOptionalUser
+import { upload } from "../middlewares/multer.middleware.js"
 
 const router = Router();
 
-// --- PUBLIC ROUTES ---
-router.route("/").get(getAllVideos);
-router.route("/:videoId").get(getVideoById);
+// --- PUBLIC / PERSISTENCE ROUTES ---
+// We use getOptionalUser so req.user is populated if a user is logged in
+router.route("/").get(getOptionalUser, getAllVideos);
+router.route("/:videoId").get(getOptionalUser, getVideoById); 
 
-// --- PRIVATE ROUTES (Requires Login) ---
+// --- PRIVATE ROUTES ---
 router.use(verifyJWT); 
 
-// 🚀 NEW: Patch route to trigger View Count + Watch History
 router.route("/watch/:videoId").patch(updateWatchHistoryAndViews);
 
 router.route("/").post(

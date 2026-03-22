@@ -55,7 +55,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         {
             $match: {
                 likedBy: new mongoose.Types.ObjectId(req.user?._id),
-                video: { $exists: true }, // Only get likes that are on videos
+                video: { $exists: true }, 
             },
         },
         {
@@ -63,36 +63,34 @@ const getLikedVideos = asyncHandler(async (req, res) => {
                 from: "videos",
                 localField: "video",
                 foreignField: "_id",
-                as: "videoDetails",
+                as: "video",
                 pipeline: [
                     {
                         $lookup: {
                             from: "users",
                             localField: "owner",
                             foreignField: "_id",
-                            as: "ownerDetails",
+                            as: "owner",
                             pipeline: [
                                 { $project: { fullName: 1, username: 1, avatar: 1 } }
                             ]
                         }
                     },
-                    { $unwind: "$ownerDetails" }
+                    { $unwind: "$owner" }
                 ]
             }
         },
-        { $unwind: "$videoDetails" },
-        {
-            $project: {
-                _id: 0, // We don't need the Like document ID
-                videoDetails: 1
-            }
-        }
+        { $unwind: "$video" },
+        // This is the magic part: it promotes the video object to the top level
+        { $replaceRoot: { newRoot: "$video" } } 
     ]);
 
     return res
         .status(200)
         .json(new ApiResponse(200, likedVideos, "Liked videos fetched successfully"));
 });
+
+
 
 export {
     toggleCommentLike,

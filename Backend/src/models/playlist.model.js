@@ -1,29 +1,29 @@
 import mongoose, { Schema } from "mongoose";
 
-const playlistSchema= new Schema({
-    name:{
-        type:String,
-        required:true
+const playlistSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
     },
-       description:{
-        type:String,
-        required:true
+    description: {
+      type: String,
+      required: true,
     },
 
-    videos:[
-        {
-            type:Schema.Types.ObjectId,
-            ref:"video"
-        }
+    videos: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Video", // ✅ Match the exact name of your Video model
+      },
     ],
 
-    owner:{
-         type:Schema.Types.ObjectId,
-            ref:"User"
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  { timestamps: true }
+);
 
-    }
-
-
-},{timestamps:true})
-
-export const Playlist= mongoose.model("Playlist",playlistSchema)
+export const Playlist = mongoose.model("Playlist", playlistSchema);
