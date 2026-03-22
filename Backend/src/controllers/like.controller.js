@@ -1,11 +1,12 @@
 import mongoose, { isValidObjectId } from "mongoose";
 import { Like } from "../models/like.model.js";
+import { Video } from "../models/video.model.js"; // 🚀 Added to fetch owner info
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Helper function to handle toggling likes for any entity
-const toggleLike = async (userId, filter, errorMessage) => {
+const toggleLike = async (userId, filter) => {
     const existingLike = await Like.findOne({ ...filter, likedBy: userId });
 
     if (existingLike) {
@@ -22,6 +23,23 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
 
     const result = await toggleLike(req.user?._id, { video: videoId });
+
+    // 🚀 STEP 2: REAL-TIME NOTIFICATION LOGIC
+    if (result.isLiked) {
+        const video = await Video.findById(videoId);
+        const io = req.app.get("io");
+
+        // Only notify if someone else likes the video
+        if (video && video.owner.toString() !== req.user?._id.toString()) {
+            io.to(video.owner.toString()).emit("notification", {
+                type: "LIKE",
+                title: "New Like! 👍",
+                message: `${req.user.fullName} liked your video: ${video.title}`,
+                avatar: req.user.avatar,
+                videoId: videoId
+            });
+        }
+    }
 
     return res
         .status(200)
@@ -81,7 +99,6 @@ const getLikedVideos = asyncHandler(async (req, res) => {
             }
         },
         { $unwind: "$video" },
-        // This is the magic part: it promotes the video object to the top level
         { $replaceRoot: { newRoot: "$video" } } 
     ]);
 
@@ -90,11 +107,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, likedVideos, "Liked videos fetched successfully"));
 });
 
-
-
 export {
     toggleCommentLike,
     toggleTweetLike,
     toggleVideoLike,    
     getLikedVideos
-};  
+};

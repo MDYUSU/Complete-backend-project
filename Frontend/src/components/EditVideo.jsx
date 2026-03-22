@@ -132,7 +132,7 @@ function EditVideo() {
                         </button>
                         <button 
                             type="button"
-                            onClick={() => navigate('/my-videos')}
+                            onClick={() => navigate('/admin/dashboard')}
                             className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg border border-slate-700 transition-all active:scale-95"
                         >
                             Cancel

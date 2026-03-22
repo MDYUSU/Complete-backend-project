@@ -17,9 +17,12 @@ import EditVideo from "./components/EditVideo.jsx";
 import Subscriptions from "./components/Subscriptions.jsx";
 import UserProfile from "./components/UserProfile.jsx";
 import WatchHistory from "./components/WatchHistory.jsx";
-import LikedVideos from "./components/LikedVideos.jsx"; 
+import LikedVideos from "./components/LikedVideos.jsx";
 import Playlists from "./components/Playlists.jsx";
 import PlaylistDetail from "./components/PlaylistDetail.jsx";
+import AdminDashboard from "./components/AdminDashboard.jsx";
+import Healthcheck from "./components/Healthcheck.jsx";
+import Downloads from "./components/Downloads.jsx";
 
 const router = createBrowserRouter([
   {
@@ -75,10 +78,22 @@ const router = createBrowserRouter([
         element: <Playlists />,
       },
       {
-        // 🚀 FIXED: Removed the placeholder duplicate. 
+        // 🚀 FIXED: Removed the placeholder duplicate.
         // Now it correctly points to the PlaylistDetail component.
         path: "/playlist/:playlistId",
         element: <PlaylistDetail />,
+      },
+      {
+        path: "/admin/dashboard",
+        element: <AdminDashboard />,
+      },
+      {
+        path: "/support/healthcheck",
+        element: <Healthcheck />,
+      },
+      {
+        path: "/downloads",
+        element: <Downloads />,
       },
     ],
   },
@@ -89,5 +104,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <Provider store={store}>
       <RouterProvider router={router} />
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

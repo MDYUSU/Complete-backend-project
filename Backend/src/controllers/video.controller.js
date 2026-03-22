@@ -331,6 +331,73 @@ const updateWatchHistoryAndViews = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, { views: video.views }, "Activity updated"));
 });
 
+
+const getSearchSuggestions = asyncHandler(async (req, res) => {
+    const { query } = req.query;
+    if (!query) return res.status(200).json(new ApiResponse(200, [], ""));
+
+    const suggestions = await Video.find({
+        title: { $regex: query, $options: "i" },
+        isPublished: true
+    })
+    .select("title")
+    .limit(5);
+
+    res.status(200).json(new ApiResponse(200, suggestions, "Suggestions fetched"));
+});
+
+const getRelatedVideos = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    const currentVideo = await Video.findById(videoId);
+
+    if (!currentVideo) throw new ApiError(404, "Video not found");
+
+    // Try to find videos from the same owner or with similar title
+    let related = await Video.aggregate([
+        {
+            $match: {
+                _id: { $ne: currentVideo._id },
+                isPublished: true,
+                $or: [
+                    { owner: currentVideo.owner },
+                    { title: { $regex: currentVideo.title.split(" ")[0], $options: "i" } }
+                ]
+            }
+        },
+        { $limit: 10 },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [{ $project: { fullName: 1, avatar: 1 } }]
+            }
+        },
+        { $unwind: "$owner" }
+    ]);
+
+    // 🚀 FALLBACK: If still empty, just grab any other 10 videos
+    if (related.length === 0) {
+        related = await Video.aggregate([
+            { $match: { _id: { $ne: currentVideo._id }, isPublished: true } },
+            { $sample: { size: 10 } },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                    pipeline: [{ $project: { fullName: 1, avatar: 1 } }]
+                }
+            },
+            { $unwind: "$owner" }
+        ]);
+    }
+
+    return res.status(200).json(new ApiResponse(200, related, "Related videos fetched"));
+});
+
 export {
     getAllVideos,
     publishAVideo,
@@ -338,5 +405,6 @@ export {
     updateVideo,
     deleteVideo,
     togglePublishStatus,
-    updateWatchHistoryAndViews, // 🚀 Fixed Export
+    updateWatchHistoryAndViews,
+    getRelatedVideos // 🚀 Fixed Export
 };
