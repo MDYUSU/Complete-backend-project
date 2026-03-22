@@ -16,6 +16,7 @@ import VideoDetail from './components/VideoDetail.jsx';
 import EditVideo from './components/EditVideo.jsx'
 import Subscriptions from './components/Subscriptions.jsx'
 import UserProfile from './components/UserProfile.jsx'
+import WatchHistory from './components/WatchHistory.jsx'
 
 const router = createBrowserRouter([
   {
@@ -46,12 +47,16 @@ const router = createBrowserRouter([
       },
       {
         // Dynamic route for watching a specific video
-        path: "/watch/:videoId",
+        path: "/video/:videoId",
         element: <VideoDetail />,
       },
       { path: "/edit-video/:videoId", element: <EditVideo /> },
       { path: "/subscriptions", element: <Subscriptions /> },
       { path: "/user/:userId", element: <UserProfile /> },
+      {
+            path: "/history",
+            element: <WatchHistory />,
+        },
     ],
   },
 ]);

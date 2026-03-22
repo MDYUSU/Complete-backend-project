@@ -14,8 +14,9 @@ function VideoCard({ video, isOwner = false, onDelete, onTogglePublish }) {
         </div>
       )}
 
+      {/* 🚀 FIXED: Changed /watch/ to /video/ to match your routes */}
       <div 
-        onClick={() => navigate(`/watch/${video._id}`)} 
+        onClick={() => navigate(`/video/${video._id}`)} 
         className='cursor-pointer'
       >
         <div className="relative aspect-video">
@@ -35,7 +36,6 @@ function VideoCard({ video, isOwner = false, onDelete, onTogglePublish }) {
       {isOwner && (
         <div className='absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
           
-          {/* 🌐 TOGGLE PUBLISH BUTTON */}
           <button 
             onClick={() => onTogglePublish(video._id)}
             className={`${video.isPublished ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-600 hover:bg-slate-500'} p-2 rounded-full shadow-md transition-colors`}

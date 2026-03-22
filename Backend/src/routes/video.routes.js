@@ -6,6 +6,8 @@ import {
     publishAVideo,
     togglePublishStatus,
     updateVideo,
+    // 🚀 NEW: Import this (make sure it's exported in your controller)
+    updateWatchHistoryAndViews 
 } from "../controllers/video.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 import {upload} from "../middlewares/multer.middleware.js"
@@ -13,12 +15,14 @@ import {upload} from "../middlewares/multer.middleware.js"
 const router = Router();
 
 // --- PUBLIC ROUTES ---
-// Anyone can see the list of videos and watch a single video
 router.route("/").get(getAllVideos);
-router.route("/:videoId").get(getVideoById); // Note: changed to /v/ to keep it clean
+router.route("/:videoId").get(getVideoById);
 
 // --- PRIVATE ROUTES (Requires Login) ---
 router.use(verifyJWT); 
+
+// 🚀 NEW: Patch route to trigger View Count + Watch History
+router.route("/watch/:videoId").patch(updateWatchHistoryAndViews);
 
 router.route("/").post(
     upload.fields([
@@ -35,4 +39,4 @@ router
 
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 
-export default router
+export default router;
