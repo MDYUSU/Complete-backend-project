@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axiosInstance from "../utils/axios";
 import VideoCard from "./VideoCard";
-import { formatTimeAgo } from "../utils/timeAgo";
 
 function PlaylistDetail() {
   const { playlistId } = useParams();
@@ -25,13 +24,13 @@ function PlaylistDetail() {
     if (playlistId) fetchPlaylistData();
   }, [playlistId]);
 
-  // 🚀 NEW: Function to remove a single video from the playlist
+  // 🚀 Function to remove a single video from the playlist
   const handleRemoveVideo = async (videoId) => {
     try {
       // Calls your PATCH /playlist/remove/:videoId/:playlistId route
       await axiosInstance.patch(`/playlist/remove/${videoId}/${playlistId}`);
 
-      // Optimistic UI: Remove the video from local state so it disappears instantly
+      // Optimistic UI update: remove instantly from state
       setPlaylist((prev) => ({
         ...prev,
         videos: prev.videos.filter((v) => v._id !== videoId),
@@ -42,11 +41,12 @@ function PlaylistDetail() {
     }
   };
 
-  if (loading) return <div className="text-center py-20 text-white italic">Loading Playlist...</div>;
+  if (loading) return <div className="text-center py-20 text-white italic animate-pulse">Loading Playlist...</div>;
   if (!playlist) return <div className="text-center py-20 text-white font-bold">Playlist not found</div>;
 
   return (
     <div className="container mx-auto p-4 mb-20 text-white max-w-7xl">
+      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row gap-6 mb-8 bg-slate-900/50 p-6 rounded-2xl border border-white/10 shadow-xl">
         <div className="w-full md:w-72 aspect-video bg-slate-800 rounded-xl flex items-center justify-center border border-white/5">
            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-slate-600">
@@ -65,22 +65,22 @@ function PlaylistDetail() {
         </div>
       </div>
 
+      {/* VIDEO GRID SECTION */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {playlist.videos?.length === 0 ? (
-          <p className="text-slate-500 col-span-full text-center py-10 italic">This playlist is currently empty.</p>
+          <div className="col-span-full text-center py-20 bg-slate-900/30 rounded-2xl border border-dashed border-white/10">
+            <p className="text-slate-500 italic">This playlist is currently empty.</p>
+          </div>
         ) : (
           playlist.videos.map((video) => (
-            <div key={video._id} className="flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-white/5">
-              <VideoCard video={video} />
-              
-              {/* 🚀 REMOVE VIDEO BUTTON */}
-              <button
-                onClick={() => handleRemoveVideo(video._id)}
-                className="w-full py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
-              >
-                Remove from playlist
-              </button>
-            </div>
+            /* 🚀 FIXED: No more extra wrapper or red button. 
+               The VideoCard now handles the "X" button internally. */
+            <VideoCard 
+              key={video._id} 
+              video={video} 
+              isPlaylistPage={true} 
+              onRemoveFromPlaylist={handleRemoveVideo}
+            />
           ))
         )}
       </div>
