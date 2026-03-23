@@ -102,10 +102,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
-    const options = {
-        httpOnly: true,
-        secure: false, 
-    };
+  const options = {
+    httpOnly: true,
+    secure: true,      // MUST be true for HTTPS (Render/Vercel)
+    sameSite: "None",  // MUST be "None" for cross-domain cookies
+};
 
     return res
         .status(200)
@@ -128,9 +129,10 @@ const logoutUser = asyncHandler(async (req, res) => {
     );
 
     const options = {
-        httpOnly: true,
-        secure: false,
-    };
+    httpOnly: true,
+    secure: true,      // MUST be true for HTTPS (Render/Vercel)
+    sameSite: "None",  // MUST be "None" for cross-domain cookies
+};
 
     return res
         .status(200)
