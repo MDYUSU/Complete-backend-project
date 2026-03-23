@@ -9,19 +9,21 @@ import {
     updateWatchHistoryAndViews, 
     getRelatedVideos
 } from "../controllers/video.controller.js"
-import { verifyJWT, getOptionalUser } from "../middlewares/auth.middleware.js" // 🚀 Added getOptionalUser
+import { verifyJWT, getOptionalUser } from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js"
 
 const router = Router();
 
-// --- PUBLIC / PERSISTENCE ROUTES ---
-// We use getOptionalUser so req.user is populated if a user is logged in
+// --- 🔓 PUBLIC / PERSONALIZED ROUTES ---
+// These use getOptionalUser so Yusuf sees his "Likes" but guests can still watch.
 router.route("/").get(getOptionalUser, getAllVideos);
 router.route("/:videoId").get(getOptionalUser, getVideoById); 
+router.route("/related/:videoId").get(getRelatedVideos); // 🚀 MOVED UP: Guests need to see this too!
 
-// --- PRIVATE ROUTES ---
+// --- 🔒 PRIVATE ROUTES (Auth Required) ---
 router.use(verifyJWT); 
 
+// These actions strictly require a logged-in user
 router.route("/watch/:videoId").patch(updateWatchHistoryAndViews);
 
 router.route("/").post(
@@ -38,6 +40,5 @@ router
     .patch(upload.single("thumbnail"), updateVideo);
 
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
-router.route("/related/:videoId").get(getRelatedVideos);
 
 export default router;
