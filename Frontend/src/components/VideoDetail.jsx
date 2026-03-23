@@ -22,12 +22,17 @@ function VideoDetail() {
   // 🚀 FEATURE 3: Related Videos State
   const [relatedVideos, setRelatedVideos] = useState([]);
 
+  // 🚀 AI FEATURE: AI Summary States
+  const [aiSummary, setAiSummary] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const currentUser = useSelector((state) => state.auth.userData);
 
   // 1. Fetch Main Video Data & Related Videos
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setAiSummary(""); // Reset AI summary when video changes
     
     // Scroll to top when videoId changes
     window.scrollTo(0, 0);
@@ -66,7 +71,28 @@ function VideoDetail() {
     return () => { isMounted = false; };
   }, [videoId]);
 
-  // 2. Trigger View Count & Watch History
+  // 2. AI Logic: Generate Summary
+  const handleGenerateSummary = async () => {
+    if (!video?.description || !video?.title) return;
+    
+    setIsGenerating(true);
+    setAiSummary(""); 
+
+    try {
+        const res = await axiosInstance.post("/ai/summarize", {
+            title: video.title,
+            description: video.description
+        });
+        setAiSummary(res.data.data.summary);
+    } catch (error) {
+        console.error("AI Error:", error);
+        alert("AI Service is busy. Please try again in a moment.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+  // 3. Trigger View Count & Watch History
   useEffect(() => {
     if (video && currentUser) {
       const triggerWatchActivity = async () => {
@@ -212,6 +238,46 @@ function VideoDetail() {
               </div>
             </div>
 
+            {/* 🚀 AI SUMMARY SECTION */}
+            <div className="mt-4 overflow-hidden rounded-xl border border-orange-500/20 bg-gradient-to-br from-slate-900 to-orange-950/10 p-4 shadow-lg shadow-orange-500/5 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl">✨</span>
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Video Insights</h3>
+                    </div>
+                    
+                    {!aiSummary && (
+                        <button 
+                            onClick={handleGenerateSummary}
+                            disabled={isGenerating}
+                            className="text-[10px] font-bold bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-full transition-all active:scale-95 disabled:opacity-50 disabled:animate-pulse"
+                        >
+                            {isGenerating ? "GENERATING..." : "SUMMARIZE"}
+                        </button>
+                    )}
+                </div>
+
+                {isGenerating && (
+                    <div className="space-y-2 py-2">
+                        <div className="h-2 w-3/4 bg-slate-800 rounded animate-pulse"></div>
+                        <div className="h-2 w-full bg-slate-800 rounded animate-pulse"></div>
+                        <div className="h-2 w-1/2 bg-slate-800 rounded animate-pulse"></div>
+                    </div>
+                )}
+
+                {aiSummary && (
+                    <div className="text-sm text-slate-200 leading-relaxed animate-in fade-in slide-in-from-top-2 duration-700">
+                        <p className="whitespace-pre-wrap">{aiSummary}</p>
+                        <button 
+                            onClick={() => setAiSummary("")} 
+                            className="mt-3 text-[10px] text-slate-500 hover:text-orange-400 transition"
+                        >
+                            Clear Summary
+                        </button>
+                    </div>
+                )}
+            </div>
+
             <div className="mt-4 bg-white/5 p-4 rounded-xl border border-white/5">
               <div className="flex gap-3 text-sm font-bold text-white mb-2">
                 <span>{video.views} views</span>
@@ -226,7 +292,7 @@ function VideoDetail() {
           </div>
         </div>
 
-        {/* 🚀 FEATURE 3: Updated Recommendations Sidebar */}
+        {/* 🚀 Sidebar / Recommendations */}
         <div className="hidden lg:block">
            <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 sticky top-24">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
