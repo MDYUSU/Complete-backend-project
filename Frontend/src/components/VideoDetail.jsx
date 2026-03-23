@@ -6,44 +6,40 @@ import CommentSection from "./CommentSection";
 import PlaylistModal from "./PlaylistModal"; 
 import { formatTimeAgo } from "../utils/timeAgo";
 
+// 🛡️ Helper to force HTTPS
+const makeSecure = (url) => {
+  if (!url) return "";
+  return url.replace("http://", "https://");
+};
+
 function VideoDetail() {
   const { videoId } = useParams();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // States for real-time UI updates
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subCount, setSubCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isDisliked, setIsDisliked] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false); 
-  
-  // 🚀 FEATURE 3: Related Videos State
   const [relatedVideos, setRelatedVideos] = useState([]);
-
-  // 🚀 AI FEATURE: AI Summary States
   const [aiSummary, setAiSummary] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.userData);
 
-  // 1. Fetch Main Video Data & Related Videos
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    setAiSummary(""); // Reset AI summary when video changes
-    
-    // Scroll to top when videoId changes
+    setAiSummary(""); 
     window.scrollTo(0, 0);
 
-    // Fetch primary video
     axiosInstance
       .get(`/videos/${videoId}`)
       .then((res) => {
         if (!isMounted) return;
         const videoData = res.data.data;
-        
         setVideo(videoData);
         setLikesCount(videoData.likesCount || 0);
         setIsLiked(videoData.isLiked || false);
@@ -61,7 +57,6 @@ function VideoDetail() {
         if (isMounted) setLoading(false);
       });
 
-    // 🚀 Fetch Related Videos
     axiosInstance.get(`/videos/related/${videoId}`)
       .then(res => {
         if (isMounted) setRelatedVideos(res.data.data);
@@ -71,13 +66,10 @@ function VideoDetail() {
     return () => { isMounted = false; };
   }, [videoId]);
 
-  // 2. AI Logic: Generate Summary
   const handleGenerateSummary = async () => {
     if (!video?.description || !video?.title) return;
-    
     setIsGenerating(true);
     setAiSummary(""); 
-
     try {
         const res = await axiosInstance.post("/ai/summarize", {
             title: video.title,
@@ -92,7 +84,6 @@ function VideoDetail() {
     }
   };
 
-  // 3. Trigger View Count & Watch History
   useEffect(() => {
     if (video && currentUser) {
       const triggerWatchActivity = async () => {
@@ -136,11 +127,9 @@ function VideoDetail() {
     if (!currentUser) return alert("Please login to like this video");
     const prevIsLiked = isLiked;
     const prevCount = likesCount;
-
     setIsLiked(!isLiked);
     setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
     if (!isLiked && isDisliked) setIsDisliked(false);
-
     try {
       await axiosInstance.post(`/likes/toggle/v/${videoId}`);
     } catch (error) {
@@ -166,7 +155,6 @@ function VideoDetail() {
   const handleDownload = () => {
     const currentDownloads = JSON.parse(localStorage.getItem("visionTube_downloads") || "[]");
     const isAlreadyDownloaded = currentDownloads.some(v => v._id === video._id);
-
     if (!isAlreadyDownloaded) {
       const updatedDownloads = [video, ...currentDownloads];
       localStorage.setItem("visionTube_downloads", JSON.stringify(updatedDownloads));
@@ -183,10 +171,9 @@ function VideoDetail() {
     <div className="container mx-auto p-4 mb-20 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          {/* Video Player */}
           <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
             <video 
-              src={video.videoFile} 
+              src={makeSecure(video.videoFile)} 
               controls 
               autoPlay 
               controlsList="nodownload" 
@@ -196,11 +183,10 @@ function VideoDetail() {
 
           <div className="mt-4">
             <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">{video.title}</h1>
-            
             <div className="flex flex-col md:flex-row md:items-center justify-between mt-4 gap-4">
               <div className="flex items-center gap-3">
                 <Link to={`/user/${video.owner?._id}`}>
-                  <img src={video.owner?.avatar} className="h-11 w-11 rounded-full border border-slate-700 object-cover" alt="avatar" />
+                  <img src={makeSecure(video.owner?.avatar)} className="h-11 w-11 rounded-full border border-slate-700 object-cover" alt="avatar" />
                 </Link>
                 <div className="mr-4">
                   <p className="text-white font-bold text-base leading-tight">{video.owner?.fullName}</p>
@@ -238,14 +224,12 @@ function VideoDetail() {
               </div>
             </div>
 
-            {/* 🚀 AI SUMMARY SECTION */}
             <div className="mt-4 overflow-hidden rounded-xl border border-orange-500/20 bg-gradient-to-br from-slate-900 to-orange-950/10 p-4 shadow-lg shadow-orange-500/5 transition-all">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <span className="text-xl">✨</span>
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Video Insights</h3>
                     </div>
-                    
                     {!aiSummary && (
                         <button 
                             onClick={handleGenerateSummary}
@@ -256,7 +240,6 @@ function VideoDetail() {
                         </button>
                     )}
                 </div>
-
                 {isGenerating && (
                     <div className="space-y-2 py-2">
                         <div className="h-2 w-3/4 bg-slate-800 rounded animate-pulse"></div>
@@ -264,7 +247,6 @@ function VideoDetail() {
                         <div className="h-2 w-1/2 bg-slate-800 rounded animate-pulse"></div>
                     </div>
                 )}
-
                 {aiSummary && (
                     <div className="text-sm text-slate-200 leading-relaxed animate-in fade-in slide-in-from-top-2 duration-700">
                         <p className="whitespace-pre-wrap">{aiSummary}</p>
@@ -292,19 +274,17 @@ function VideoDetail() {
           </div>
         </div>
 
-        {/* 🚀 Sidebar / Recommendations */}
         <div className="hidden lg:block">
            <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 sticky top-24">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                 <span className="text-orange-500">▶</span> Up Next
               </h3>
-              
               <div className="flex flex-col gap-4">
                 {relatedVideos.map((item) => (
                   <Link key={item._id} to={`/video/${item._id}`} className="flex gap-3 group">
                     <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-800 border border-white/5">
                       <img 
-                        src={item.thumbnail} 
+                        src={makeSecure(item.thumbnail)} 
                         className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
                         alt={item.title} 
                       />
@@ -322,7 +302,6 @@ function VideoDetail() {
                     </div>
                   </Link>
                 ))}
-                
                 {relatedVideos.length === 0 && (
                   <div className="text-center py-10">
                     <p className="text-slate-500 text-xs italic">No related videos found.</p>
@@ -332,7 +311,6 @@ function VideoDetail() {
            </div>
         </div>
       </div>
-
       {showPlaylistModal && (
         <PlaylistModal 
           videoId={videoId} 
