@@ -6,12 +6,6 @@ import CommentSection from "./CommentSection";
 import PlaylistModal from "./PlaylistModal"; 
 import { formatTimeAgo } from "../utils/timeAgo";
 
-// 🛡️ Helper to force HTTPS
-const makeSecure = (url) => {
-  if (!url) return "";
-  return url.replace("http://", "https://");
-};
-
 function VideoDetail() {
   const { videoId } = useParams();
   const [video, setVideo] = useState(null);
@@ -173,7 +167,7 @@ function VideoDetail() {
         <div className="lg:col-span-2">
           <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
             <video 
-              src={makeSecure(video.videoFile)} 
+              src={video.videoFile} 
               controls 
               autoPlay 
               controlsList="nodownload" 
@@ -186,7 +180,7 @@ function VideoDetail() {
             <div className="flex flex-col md:flex-row md:items-center justify-between mt-4 gap-4">
               <div className="flex items-center gap-3">
                 <Link to={`/user/${video.owner?._id}`}>
-                  <img src={makeSecure(video.owner?.avatar)} className="h-11 w-11 rounded-full border border-slate-700 object-cover" alt="avatar" />
+                  <img src={video.owner?.avatar} className="h-11 w-11 rounded-full border border-slate-700 object-cover" alt="avatar" />
                 </Link>
                 <div className="mr-4">
                   <p className="text-white font-bold text-base leading-tight">{video.owner?.fullName}</p>
@@ -284,7 +278,7 @@ function VideoDetail() {
                   <Link key={item._id} to={`/video/${item._id}`} className="flex gap-3 group">
                     <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-800 border border-white/5">
                       <img 
-                        src={makeSecure(item.thumbnail)} 
+                        src={item.thumbnail} 
                         className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
                         alt={item.title} 
                       />

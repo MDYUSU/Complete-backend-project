@@ -4,12 +4,6 @@ import { useSelector } from 'react-redux'
 import axiosInstance from "../../utils/axios"
 import { Container, LogoutBtn } from "../index"
 
-// 🛡️ Helper to force HTTPS for Cloudinary/external assets
-const makeSecure = (url) => {
-  if (!url) return "";
-  return url.replace("http://", "https://");
-};
-
 function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -160,7 +154,7 @@ function Header() {
               {authStatus && (
                 <li className='relative' ref={dropdownRef}>
                   <img 
-                    src={makeSecure(userData?.avatar)} 
+                    src={userData?.avatar} 
                     alt="profile" 
                     className='w-9 h-9 rounded-full object-cover border-2 border-slate-700 cursor-pointer hover:border-orange-600 transition'
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -189,7 +183,7 @@ function Header() {
 
                       <div className="border-t border-white/5 mt-1 pt-1">
                         <div onClick={() => setIsProfileOpen(false)}>
-                            <LogoutBtn className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition flex items-center gap-3" />
+                             <LogoutBtn className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition flex items-center gap-3" />
                         </div>
                       </div>
                     </div>

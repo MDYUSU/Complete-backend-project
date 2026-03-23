@@ -1,12 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// 🛡️ Helper to force HTTPS
-const makeSecure = (url) => {
-  if (!url) return "";
-  return url.replace("http://", "https://");
-};
-
 function VideoCard({ video, isOwner = false, onDelete, onTogglePublish }) {
   const navigate = useNavigate()
 
@@ -26,7 +20,7 @@ function VideoCard({ video, isOwner = false, onDelete, onTogglePublish }) {
       >
         <div className="relative aspect-video">
             <img 
-              src={makeSecure(video.thumbnail)} 
+              src={video.thumbnail} 
               alt={video.title} 
               className='w-full h-full object-cover' 
             />
