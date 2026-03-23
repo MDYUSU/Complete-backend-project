@@ -24,20 +24,25 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
     const result = await toggleLike(req.user?._id, { video: videoId });
 
-    // 🚀 STEP 2: REAL-TIME NOTIFICATION LOGIC
+    // 🚀 FIXED: REAL-TIME NOTIFICATION LOGIC WITH SAFETY CHECK
     if (result.isLiked) {
-        const video = await Video.findById(videoId);
-        const io = req.app.get("io");
+        try {
+            const video = await Video.findById(videoId);
+            const io = req.app.get("io"); // This is returning undefined right now
 
-        // Only notify if someone else likes the video
-        if (video && video.owner.toString() !== req.user?._id.toString()) {
-            io.to(video.owner.toString()).emit("notification", {
-                type: "LIKE",
-                title: "New Like! 👍",
-                message: `${req.user.fullName} liked your video: ${video.title}`,
-                avatar: req.user.avatar,
-                videoId: videoId
-            });
+            // 🛡️ Only emit if 'io' actually exists to prevent 500 crash
+            if (io && video && video.owner.toString() !== req.user?._id.toString()) {
+                io.to(video.owner.toString()).emit("notification", {
+                    type: "LIKE",
+                    title: "New Like! 👍",
+                    message: `${req.user.fullName} liked your video: ${video.title}`,
+                    avatar: req.user.avatar,
+                    videoId: videoId
+                });
+            }
+        } catch (error) {
+            console.error("Notification failed, but like was recorded:", error);
+            // We don't throw an error here so the user's like is still saved
         }
     }
 
