@@ -9,7 +9,7 @@ function LikedVideos() {
     const fetchLikedVideos = async () => {
         try {
             const res = await axiosInstance.get('/likes/videos');
-            // Check your backend response structure - adjust if it's res.data.data.likedVideos
+            // Grounding the data: Ensure we are targeting the array correctly
             setVideos(res.data.data);
         } catch (error) {
             console.error("Error fetching liked videos", error);
@@ -24,10 +24,10 @@ function LikedVideos() {
 
     const handleUnlike = async (videoId) => {
         try {
-            // Trigger the toggle
+            // Trigger the toggle on the backend
             await axiosInstance.post(`/likes/toggle/v/${videoId}`);
             
-            // Remove from UI immediately
+            // Remove from UI immediately for a snappy feel
             setVideos((prev) => prev.filter((v) => v._id !== videoId));
         } catch (error) {
             alert("Failed to unlike video");
@@ -35,31 +35,29 @@ function LikedVideos() {
         }
     };
 
-    if (loading) return <div className="text-white text-center py-20">Loading...</div>;
+    if (loading) return <div className="text-white text-center py-20 italic animate-pulse">Loading Liked Videos...</div>;
 
     return (
-        <div className="container mx-auto p-4 mb-20">
+        <div className="container mx-auto p-4 mb-20 max-w-7xl">
             <h1 className="text-2xl font-bold text-white mb-8 border-b border-white/10 pb-4">
                 Liked Videos ({videos.length})
             </h1>
 
             {videos.length === 0 ? (
-                <p className="text-slate-500 text-center py-20">No liked videos found.</p>
+                <div className="flex flex-col items-center justify-center py-20">
+                    <span className="text-4xl mb-4">👍</span>
+                    <p className="text-slate-500 text-center">No liked videos yet. Start exploring!</p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {videos.map((video) => (
-                        <div key={video._id} className="bg-slate-900 rounded-xl overflow-hidden border border-white/5 flex flex-col">
-                            {/* The Video Card Component */}
-                            <VideoCard video={video} />
-
-                            {/* 🚀 FIXED DELETE BUTTON: Always Visible */}
-                            <button
-                                onClick={() => handleUnlike(video._id)}
-                                className="w-full py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
-                            >
-                                Remove from Liked
-                            </button>
-                        </div>
+                        /* 🚀 PRO-UI: No extra wrapper or red button here anymore */
+                        <VideoCard 
+                            key={video._id} 
+                            video={video} 
+                            isLikedPage={true} 
+                            onRemoveLike={handleUnlike} 
+                        />
                     ))}
                 </div>
             )}
