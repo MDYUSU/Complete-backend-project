@@ -92,11 +92,11 @@ function Login() {
                         </button>
                     </div>
 
-                    <div className="flex justify-end">
+                    {/* <div className="flex justify-end">
                         <Link to="/forgot-password" size="xs" className="text-[10px] font-bold text-slate-500 hover:text-orange-500 transition-colors uppercase tracking-tight">
                             Forgot Password?
                         </Link>
-                    </div>
+                    </div> */}
 
                     {/* Submit Button */}
                     <button 
