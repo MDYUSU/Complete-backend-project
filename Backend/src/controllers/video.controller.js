@@ -113,34 +113,42 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 // 3. Get Video by ID (Updated with Like/Dislike persistence)
 // ... (Your other imports remain the same)
-
-// 3. Get Video by ID (Fully Synchronized for Persistence)
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
 
-    if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid video ID");
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID");
+    }
 
-    // 🚀 THE PERSISTENCE FIX: 
-    // If getOptionalUser found a token, req.user will exist.
-    // We convert it to a proper ObjectId for the aggregation match.
+    // Identify the user if they are logged in (via getOptionalUser middleware)
     const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
 
     const video = await Video.aggregate([
         {
-            $match: { _id: new mongoose.Types.ObjectId(videoId) }
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
         },
         {
+            // Join with owner details
             $lookup: {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
                 as: "owner",
                 pipeline: [
-                    { $project: { username: 1, avatar: 1, fullName: 1 } }
+                    {
+                        $project: {
+                            username: 1,
+                            avatar: 1,
+                            fullName: 1
+                        }
+                    }
                 ]
             }
         },
         {
+            // Join with likes collection
             $lookup: {
                 from: "likes",
                 localField: "_id",
@@ -155,12 +163,11 @@ const getVideoById = asyncHandler(async (req, res) => {
                     $size: {
                         $filter: {
                             input: "$likes",
-                            as: "item",
-                            cond: { $eq: ["$$item.isDislike", false] }
+                            as: "l",
+                            cond: { $eq: ["$$l.isDislike", false] }
                         }
                     }
                 },
-                // 🚀 This logic now correctly identifies the user's like status on refresh
                 isLiked: {
                     $cond: {
                         if: {
@@ -173,11 +180,11 @@ const getVideoById = asyncHandler(async (req, res) => {
                                             $size: {
                                                 $filter: {
                                                     input: "$likes",
-                                                    as: "item",
+                                                    as: "l",
                                                     cond: { 
                                                         $and: [
-                                                            { $eq: ["$$item.likedBy", userId] },
-                                                            { $eq: ["$$item.isDislike", false] }
+                                                            { $eq: ["$$l.likedBy", userId] },
+                                                            { $eq: ["$$l.isDislike", false] }
                                                         ]
                                                     }
                                                 }
@@ -203,11 +210,11 @@ const getVideoById = asyncHandler(async (req, res) => {
                                             $size: {
                                                 $filter: {
                                                     input: "$likes",
-                                                    as: "item",
+                                                    as: "l",
                                                     cond: { 
                                                         $and: [
-                                                            { $eq: ["$$item.likedBy", userId] },
-                                                            { $eq: ["$$item.isDislike", true] }
+                                                            { $eq: ["$$l.likedBy", userId] },
+                                                            { $eq: ["$$l.isDislike", true] }
                                                         ]
                                                     }
                                                 }
@@ -225,12 +232,14 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                likes: 0 
+                likes: 0 // Clean up the raw array
             }
         }
     ]);
 
-    if (!video?.length) throw new ApiError(404, "Video not found");
+    if (!video?.length) {
+        throw new ApiError(404, "Video not found");
+    }
 
     return res
         .status(200)
