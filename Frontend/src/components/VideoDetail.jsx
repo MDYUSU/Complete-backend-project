@@ -29,20 +29,30 @@ function VideoDetail() {
     setAiSummary(""); 
     window.scrollTo(0, 0);
 
-    axiosInstance
-      .get(`/videos/${videoId}`)
-      .then((res) => {
-        if (!isMounted) return;
-        const videoData = res.data.data;
-        setVideo(videoData);
-        setLikesCount(videoData.likesCount || 0);
-        setIsLiked(videoData.isLiked || false);
-        setIsDisliked(videoData.isDisliked || false);
+   // Inside your useEffect for [videoId]
+axiosInstance
+  .get(`/videos/${videoId}`)
+  .then((res) => {
+    if (!isMounted) return;
+    const videoData = res.data.data;
+    
+    // 🛡️ Debugging: Add this log to see exactly what the backend sent
+    console.log("Full Video Data from API:", videoData);
 
-        if (videoData?.owner?._id) {
-          fetchSubscriptionData(videoData.owner._id);
-        }
-      })
+    setVideo(videoData);
+    
+    // Explicitly sync the states from the joined aggregation data
+    setLikesCount(videoData.likesCount ?? 0); 
+    setIsLiked(videoData.isLiked ?? false);
+    setIsDisliked(videoData.isDisliked ?? false);
+
+    if (videoData?.owner?._id) {
+      fetchSubscriptionData(videoData.owner._id);
+    }
+  })
+
+
+
       .catch((err) => {
         console.error("Video Fetch Error:", err);
         if (isMounted) setVideo(null);
