@@ -23,6 +23,7 @@ function VideoDetail() {
 
   const currentUser = useSelector((state) => state.auth.userData);
 
+  // FETCH VIDEO DATA
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -35,7 +36,6 @@ function VideoDetail() {
         if (!isMounted) return;
         const videoData = res.data.data;
         
-        // Syncing all persistent data from the Backend Aggregation
         setVideo(videoData);
         setLikesCount(videoData.likesCount || 0);
         setIsLiked(videoData.isLiked || false);
@@ -62,10 +62,18 @@ function VideoDetail() {
     return () => { isMounted = false; };
   }, [videoId]);
 
+  // UPDATE WATCH HISTORY
+  useEffect(() => {
+    if (videoId && currentUser) {
+      axiosInstance
+        .patch(`/videos/watch/${videoId}`)
+        .then(() => console.log("Watch history updated successfully"))
+        .catch((err) => console.error("History update failed:", err));
+    }
+  }, [videoId, currentUser]);
+
   const handleLikeToggle = async () => {
     if (!currentUser) return alert("Please login to like this video");
-    
-    // Optimistic UI Update
     const prevIsLiked = isLiked;
     const prevCount = likesCount;
     
@@ -76,7 +84,6 @@ function VideoDetail() {
     try {
       await axiosInstance.post(`/likes/toggle/v/${videoId}`);
     } catch (error) {
-      // Rollback on failure
       setIsLiked(prevIsLiked);
       setLikesCount(prevCount);
     }
@@ -143,6 +150,23 @@ function VideoDetail() {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(video.videoFile);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${video.title.replace(/\s+/g, '_')}.mp4`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download video.");
+    }
+  };
+
   if (loading) return <div className="text-center py-20 text-white italic animate-pulse">Loading VisionTube...</div>;
   if (!video) return <div className="text-center py-20 text-white font-bold">Video not found</div>;
 
@@ -182,11 +206,22 @@ function VideoDetail() {
                     <svg xmlns="http://www.w3.org/2000/svg" fill={isDisliked ? "white" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.367 13.75c-.806 0-1.533.446-2.031 1.08a9.041 9.041 0 0 1-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 0 0-.322 1.672v.333a.75.75 0 0 0 .75.75 2.25 2.25 0 0 0 2.25-2.25c0-.115.018-.23.052-.339l1.44-4.33a2.25 2.25 0 0 1 2.138-2.961H3.75c-.691 0-1.25-.559-1.25-1.25V9.408c0-.285.113-.559.313-.76a1.44 1.44 0 0 1 1.043-.435H5.25a.75.75 0 0 1 .75-.75V6.021c0-.285.113-.559.313-.76a1.44 1.44 0 0 1 1.043-.435h1.442a.75.75 0 0 1 .75-.75V2.634c0-.285.113-.559.313-.76a1.44 1.44 0 0 1 1.043-.435H13.5a.75.75 0 0 0 .75.75v1.442c0 .285.113.559.313.76a1.44 1.44 0 0 1 1.043.435h2.152c.691 0 1.25.559 1.25 1.25v2.842c0 .691-.559 1.25-1.25 1.25h-2.383Z"/></svg>
                   </button>
                 </div>
+
+                {/* DOWNLOAD BUTTON */}
+                <button 
+                  onClick={handleDownload} 
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 font-bold text-sm transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 12l4.5 4.5m0 0 4.5-4.5M12 3v13.5" />
+                  </svg>
+                  Download
+                </button>
+
                 <button onClick={() => setShowPlaylistModal(true)} className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 font-bold text-sm transition">Save</button>
               </div>
             </div>
 
-            {/* AI Summary Box */}
             <div className="mt-6 rounded-xl border border-orange-500/20 bg-slate-900/60 p-4">
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -215,7 +250,6 @@ function VideoDetail() {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="hidden lg:block">
            <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 sticky top-24">
               <h3 className="text-white font-bold mb-4">Up Next</h3>
