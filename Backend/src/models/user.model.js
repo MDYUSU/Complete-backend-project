@@ -46,6 +46,12 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
+    downloadedVideos: [
+    {
+        type: Schema.Types.ObjectId,
+        ref: "Video"
+    }
+]
   },
   { timestamps: true }
 );

@@ -23,7 +23,7 @@ function VideoDetail() {
 
   const currentUser = useSelector((state) => state.auth.userData);
 
-  // FETCH VIDEO DATA
+  // 1. FETCH VIDEO DATA
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -62,12 +62,12 @@ function VideoDetail() {
     return () => { isMounted = false; };
   }, [videoId]);
 
-  // UPDATE WATCH HISTORY
+  // 2. UPDATE WATCH HISTORY (Automatically on load)
   useEffect(() => {
     if (videoId && currentUser) {
       axiosInstance
         .patch(`/videos/watch/${videoId}`)
-        .then(() => console.log("Watch history updated successfully"))
+        .then(() => console.log("Watch history updated"))
         .catch((err) => console.error("History update failed:", err));
     }
   }, [videoId, currentUser]);
@@ -150,17 +150,25 @@ function VideoDetail() {
     }
   };
 
+  // 3. ENHANCED DOWNLOAD LOGIC (Saves to PC + Saves to App History)
   const handleDownload = async () => {
     try {
+      // Step A: Trigger physical file download
       const response = await fetch(video.videoFile);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.body.appendChild(document.createElement("a"));
       link.href = url;
       link.setAttribute("download", `${video.title.replace(/\s+/g, '_')}.mp4`);
-      document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Step B: Update backend 'Downloads' collection/array
+      if (currentUser) {
+        await axiosInstance.post(`/videos/download/${videoId}`);
+        console.log("Added to in-app downloads list");
+      }
     } catch (error) {
       console.error("Download failed:", error);
       alert("Failed to download video.");
@@ -207,7 +215,7 @@ function VideoDetail() {
                   </button>
                 </div>
 
-                {/* DOWNLOAD BUTTON */}
+                {/* UPDATED DOWNLOAD BUTTON */}
                 <button 
                   onClick={handleDownload} 
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 font-bold text-sm transition"

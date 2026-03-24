@@ -7,6 +7,7 @@ import {
     togglePublishStatus,
     updateVideo,
     updateWatchHistoryAndViews, 
+    toggleDownloadHistory,
     getRelatedVideos
 } from "../controllers/video.controller.js"
 import { verifyJWT, getOptionalUser } from "../middlewares/auth.middleware.js"
@@ -25,6 +26,7 @@ router.use(verifyJWT);
 
 // These actions strictly require a logged-in user
 router.route("/watch/:videoId").patch(updateWatchHistoryAndViews);
+router.route("/download/:videoId").post(toggleDownloadHistory);
 
 router.route("/").post(
     upload.fields([

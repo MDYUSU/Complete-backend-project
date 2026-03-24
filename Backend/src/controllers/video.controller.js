@@ -407,6 +407,18 @@ const getRelatedVideos = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, related, "Related videos fetched"));
 });
 
+const toggleDownloadHistory = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid Video ID");
+
+    // Add video to user's downloadedVideos array (prevents duplicates)
+    await User.findByIdAndUpdate(req.user?._id, {
+        $addToSet: { downloadedVideos: videoId }
+    });
+
+    return res.status(200).json(new ApiResponse(200, {}, "Video added to downloads"));
+});
+
 export {
     getAllVideos,
     publishAVideo,
@@ -415,5 +427,6 @@ export {
     deleteVideo,
     togglePublishStatus,
     updateWatchHistoryAndViews,
-    getRelatedVideos // 🚀 Fixed Export
+    getRelatedVideos,
+    toggleDownloadHistory // 🚀 Fixed Export
 };
