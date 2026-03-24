@@ -62,44 +62,27 @@ function Header() {
     }
   }
 
-  const navItems = [
-    { name: "Login", slug: "/login", active: !authStatus },
-    { name: "Signup", slug: "/signup", active: !authStatus },
-    { 
-      customComponent: (
-        <button 
-          onClick={() => navigate('/add-video')}
-          className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white pl-3 pr-4 py-2 rounded-full transition-all active:scale-95 border border-white/5"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          <span className="font-semibold text-sm">Create</span>
-        </button>
-      ), 
-      active: authStatus 
-    },
-  ]
-
   return (
     <>
       <header className='py-3 shadow bg-slate-900 border-b border-slate-800 sticky top-0 z-50'>
         <Container>
-          <nav className='flex items-center gap-4'>
+          <nav className='flex items-center justify-between gap-2 md:gap-4'>
             
-            <button onClick={toggleSidebar} className='p-2 hover:bg-slate-800 rounded-full text-white transition-all active:scale-90'>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
+            {/* Left Section: Menu + Logo */}
+            <div className='flex items-center gap-2 md:gap-4'>
+                <button onClick={toggleSidebar} className='p-2 hover:bg-slate-800 rounded-full text-white transition-all active:scale-90'>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                </button>
 
-            <div className='flex-shrink-0'>
-              <Link to='/'>
-                <span className="text-orange-600 font-bold text-2xl tracking-tight">VisionTube</span>
-              </Link>
+                <Link to='/' className='flex-shrink-0'>
+                    <span className="text-orange-600 font-black text-xl md:text-2xl tracking-tighter">VisionTube</span>
+                </Link>
             </div>
 
-            <div className='hidden md:flex flex-1 max-w-xl mx-auto items-center relative' ref={searchRef}>
+            {/* Center Section: Search Bar (Hidden on very small screens) */}
+            <div className='hidden sm:flex flex-1 max-w-xl mx-auto items-center relative px-2' ref={searchRef}>
               <div className="flex w-full">
                 <input 
                   type="text" 
@@ -108,7 +91,7 @@ function Header() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   onKeyDown={handleSearch}
-                  className='w-full bg-black border border-slate-700 text-white px-4 py-2 rounded-l-full focus:outline-none focus:border-blue-500 transition-colors text-sm'
+                  className='w-full bg-black border border-slate-700 text-white px-4 py-2 rounded-l-full focus:outline-none focus:border-orange-600 transition-colors text-sm'
                 />
                 <button onClick={handleSearch} className='bg-slate-800 border border-l-0 border-slate-700 px-5 py-2 rounded-r-full hover:bg-slate-700 transition'>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-slate-300">
@@ -138,59 +121,71 @@ function Header() {
               )}
             </div>
 
-            <ul className='flex ml-auto items-center gap-4'>
-              {navItems.map((item, index) => 
-                item.active ? (
-                  <li key={index} className='hidden sm:block'>
-                    {item.customComponent || (
-                      <button onClick={() => navigate(item.slug)} className='px-4 py-2 hover:bg-slate-800 rounded-full text-white text-sm font-medium transition'>
-                        {item.name}
-                      </button>
-                    )}
-                  </li>
-                ) : null
-              )}
+            {/* Right Section: Auth/User Actions */}
+            <div className='flex items-center gap-2 md:gap-4'>
+                {authStatus ? (
+                    <>
+                        {/* Create Button: Full on desktop, Icon on mobile */}
+                        <button 
+                            onClick={() => navigate('/add-video')}
+                            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-3 md:px-4 py-2 rounded-full transition-all active:scale-95 shadow-lg shadow-orange-900/20"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            <span className="hidden md:inline font-black text-[10px] uppercase tracking-widest">Create</span>
+                        </button>
 
-              {authStatus && (
-                <li className='relative' ref={dropdownRef}>
-                  <img 
-                    src={userData?.avatar} 
-                    alt="profile" 
-                    className='w-9 h-9 rounded-full object-cover border-2 border-slate-700 cursor-pointer hover:border-orange-600 transition'
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  />
+                        {/* Profile Dropdown */}
+                        <div className='relative' ref={dropdownRef}>
+                            <img 
+                                src={userData?.avatar} 
+                                alt="profile" 
+                                className='w-9 h-9 rounded-full object-cover border-2 border-slate-700 cursor-pointer hover:border-orange-600 transition'
+                                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                            />
 
-                  {isProfileOpen && (
-                    <div className="absolute right-0 mt-3 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden">
-                      <div className="px-4 py-3 border-b border-white/5 bg-white/5">
-                         <p className="text-white font-bold truncate text-sm">{userData?.fullName}</p>
-                         <p className="text-slate-400 text-xs truncate">@{userData?.username}</p>
-                      </div>
+                            {isProfileOpen && (
+                                <div className="absolute right-0 mt-3 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-white/5 bg-white/5">
+                                        <p className="text-white font-bold truncate text-sm">{userData?.fullName}</p>
+                                        <p className="text-slate-400 text-xs truncate">@{userData?.username}</p>
+                                    </div>
 
-                      <button 
-                        onClick={() => { navigate(`/user/${userData._id}`); setIsProfileOpen(false); }}
-                        className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-white/10 transition flex items-center gap-3"
-                      >
-                         <span>👤</span> Your Profile
-                      </button>
+                                    <button 
+                                        onClick={() => { navigate(`/user/${userData._id}`); setIsProfileOpen(false); }}
+                                        className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-white/10 transition flex items-center gap-3"
+                                    >
+                                        <span>👤</span> Your Profile
+                                    </button>
 
-                      <button 
-                        onClick={() => { navigate('/login'); setIsProfileOpen(false); }}
-                        className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-white/10 transition flex items-center gap-3"
-                      >
-                         <span>🔄</span> Switch Account
-                      </button>
-
-                      <div className="border-t border-white/5 mt-1 pt-1">
-                        <div onClick={() => setIsProfileOpen(false)}>
-                             <LogoutBtn className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition flex items-center gap-3" />
+                                    <div className="border-t border-white/5 mt-1 pt-1">
+                                        <div onClick={() => setIsProfileOpen(false)}>
+                                            <LogoutBtn className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition flex items-center gap-3" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                      </div>
+                    </>
+                ) : (
+                    /* IF LOGGED OUT: Show Auth Buttons (Visible on Mobile) */
+                    <div className="flex items-center gap-1 md:gap-3">
+                        <button 
+                            onClick={() => navigate('/login')} 
+                            className='px-3 py-2 text-slate-400 hover:text-white text-[10px] md:text-xs font-black uppercase tracking-widest transition'
+                        >
+                            Log In
+                        </button>
+                        <button 
+                            onClick={() => navigate('/signup')} 
+                            className='px-4 py-2 bg-white text-black rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition active:scale-95 shadow-lg'
+                        >
+                            Sign Up
+                        </button>
                     </div>
-                  )}
-                </li>
-              )}
-            </ul>
+                )}
+            </div>
           </nav>
         </Container>
       </header>
@@ -245,10 +240,6 @@ function Header() {
               <Link to="/admin/dashboard" onClick={toggleSidebar} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-800 rounded-lg transition text-sm font-medium text-orange-500">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0V3m7.5 0v13.5M6 7.5h3m-3 3h3m6-3h3m-3 3h3" /></svg>
                 Dashboard
-              </Link>
-              <Link to="/my-videos" onClick={toggleSidebar} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-800 rounded-lg transition text-sm font-medium">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" /></svg>
-                My Content
               </Link>
             </>
           )}
